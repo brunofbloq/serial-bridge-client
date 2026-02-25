@@ -1,0 +1,159 @@
+name: Sync Artifacts from serial-bridge
+
+on:
+  # Triggered manually with an explicit version tag (e.g. v0.2.0)
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to pull from serial-bridge (e.g. v0.2.0)"
+        required: true
+        type: string
+
+  # Triggered automatically by the serial-bridge release workflow via
+  # `repository_dispatch` (event type: release-published).
+  # The source workflow must POST with:
+  #   client_payload: { version: "v0.2.0" }
+  repository_dispatch:
+    types: [release-published]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Download, extract & commit artifacts
+    runs-on: ubuntu-latest
+
+    env:
+      SOURCE_REPO: brunofbloq/serial-bridge
+
+    steps:
+      # ── Resolve version ──────────────────────────────────────────────────────
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.client_payload.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Checkout this repo ───────────────────────────────────────────────────
+      - name: Checkout serial-bridge-client
+        uses: actions/checkout@v4
+
+      # ── Download release assets from serial-bridge ───────────────────────────
+      - name: Download Linux x64 binary
+        env:
+          GH_TOKEN: ${{ secrets.SERIAL_BRIDGE_READ_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          gh release download "$TAG" \
+            --repo "$SOURCE_REPO" \
+            --pattern "serial-bridge-${TAG}-linux-x64.tar.gz" \
+            --dir /tmp/artifacts
+
+      - name: Download Windows x64 binary
+        env:
+          GH_TOKEN: ${{ secrets.SERIAL_BRIDGE_READ_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          gh release download "$TAG" \
+            --repo "$SOURCE_REPO" \
+            --pattern "serial-bridge-${TAG}-windows-x64.zip" \
+            --dir /tmp/artifacts || echo "::warning::Windows artifact not found, skipping."
+
+      - name: Download macOS arm64 binary
+        env:
+          GH_TOKEN: ${{ secrets.SERIAL_BRIDGE_READ_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          gh release download "$TAG" \
+            --repo "$SOURCE_REPO" \
+            --pattern "serial-bridge-${TAG}-macos-arm64.tar.gz" \
+            --dir /tmp/artifacts || echo "::warning::macOS arm64 artifact not found, skipping."
+
+      - name: Download macOS x64 binary
+        env:
+          GH_TOKEN: ${{ secrets.SERIAL_BRIDGE_READ_TOKEN }}
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          gh release download "$TAG" \
+            --repo "$SOURCE_REPO" \
+            --pattern "serial-bridge-${TAG}-macos-x64.tar.gz" \
+            --dir /tmp/artifacts || echo "::warning::macOS x64 artifact not found, skipping."
+
+      # ── Extract binaries ─────────────────────────────────────────────────────
+      - name: Extract Linux x64
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          ARCHIVE="/tmp/artifacts/serial-bridge-${TAG}-linux-x64.tar.gz"
+          if [ -f "$ARCHIVE" ]; then
+            tar -xzf "$ARCHIVE" -C /tmp/artifacts/
+            # The archive is expected to contain `serial_bridge` at its root
+            find /tmp/artifacts -maxdepth 2 -name "serial_bridge" -not -path "*/windows*" | head -1 \
+              | xargs -I{} cp {} bin/linux-x64/serial_bridge
+            chmod +x bin/linux-x64/serial_bridge
+          fi
+
+      - name: Extract Windows x64
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          ARCHIVE="/tmp/artifacts/serial-bridge-${TAG}-windows-x64.zip"
+          if [ -f "$ARCHIVE" ]; then
+            unzip -o "$ARCHIVE" -d /tmp/artifacts/windows-x64/
+            find /tmp/artifacts/windows-x64 -maxdepth 2 -name "serial_bridge.exe" | head -1 \
+              | xargs -I{} cp {} bin/windows-x64/serial_bridge.exe
+          fi
+
+      - name: Extract macOS arm64
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          ARCHIVE="/tmp/artifacts/serial-bridge-${TAG}-macos-arm64.tar.gz"
+          if [ -f "$ARCHIVE" ]; then
+            mkdir -p /tmp/artifacts/macos-arm64
+            tar -xzf "$ARCHIVE" -C /tmp/artifacts/macos-arm64/
+            find /tmp/artifacts/macos-arm64 -maxdepth 2 -name "serial_bridge" | head -1 \
+              | xargs -I{} cp {} bin/macos-arm64/serial_bridge
+            chmod +x bin/macos-arm64/serial_bridge
+          fi
+
+      - name: Extract macOS x64
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          ARCHIVE="/tmp/artifacts/serial-bridge-${TAG}-macos-x64.tar.gz"
+          if [ -f "$ARCHIVE" ]; then
+            mkdir -p /tmp/artifacts/macos-x64
+            tar -xzf "$ARCHIVE" -C /tmp/artifacts/macos-x64/
+            find /tmp/artifacts/macos-x64 -maxdepth 2 -name "serial_bridge" | head -1 \
+              | xargs -I{} cp {} bin/macos-x64/serial_bridge
+            chmod +x bin/macos-x64/serial_bridge
+          fi
+
+      # ── Regenerate checksums ─────────────────────────────────────────────────
+      - name: Regenerate checksums.txt
+        run: |
+          > checksums.txt
+          for f in \
+            bin/linux-x64/serial_bridge \
+            bin/windows-x64/serial_bridge.exe \
+            bin/macos-arm64/serial_bridge \
+            bin/macos-x64/serial_bridge; do
+            [ -f "$f" ] && sha256sum "$f" >> checksums.txt
+          done
+          echo "--- checksums.txt ---"
+          cat checksums.txt
+
+      # ── Commit & push ────────────────────────────────────────────────────────
+      - name: Commit and push
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bin/ checksums.txt
+          if git diff --cached --quiet; then
+            echo "Nothing changed — skipping commit."
+          else
+            git commit -m "release: sync serial-bridge ${TAG} binaries and checksums"
+            git push
+          fi
