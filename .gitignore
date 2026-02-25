@@ -1,0 +1,23 @@
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+
+# Python / node caches from samples
+__pycache__/
+*.pyc
+node_modules/
+
+# Local runtime outputs
+*.log
+*.tmp
+*.swp
+
+# Local secret material
+.env
+.env.*
+*.local
+examples/auth.env
+examples/bridge-auth.json
