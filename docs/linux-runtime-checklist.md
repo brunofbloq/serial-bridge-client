@@ -39,6 +39,8 @@ chmod +x ./run-serial-bridge.sh
 ## 5. Configure URL and auth
 
 Choose one auth method.
+If using username/password, retrieve them from:
+- `${BRIDGE_SERVER_URL}/user/login`
 
 Option A: Username/password env vars
 

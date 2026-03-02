@@ -29,6 +29,10 @@ chmod +x ./run-serial-bridge.sh
 
 2. Configure auth and URL (choose one auth method):
 
+Get credentials from the emulator at:
+- `${BRIDGE_SERVER_URL}/user/login`
+- Example: `https://kerong-modbus-emulator.vercel.app/user/login`
+
 - Env vars:
 
 ```bash
@@ -74,6 +78,7 @@ If `BRIDGE_AUTH_FILE` is set, the script uses `--auth-file`.
 
 - Full quickstart and platform notes: [docs/quickstart.md](docs/quickstart.md)
 - Linux runtime checklist: [docs/linux-runtime-checklist.md](docs/linux-runtime-checklist.md)
+- Auth endpoint examples (Python/C++): [examples/auth_login/README.md](examples/auth_login/README.md)
 - Protocol contract: [docs/contract.md](docs/contract.md)
 - Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md)
 - Release and CI handoff: [docs/release-handoff.md](docs/release-handoff.md)
