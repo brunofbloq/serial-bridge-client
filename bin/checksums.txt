@@ -1,0 +1,1 @@
+285dd17ad184f7d9b6eb7bc349fce3a3fd27fffdf672877ed400f1ab7e9cfc1d  bin/linux-x64/serial_bridge

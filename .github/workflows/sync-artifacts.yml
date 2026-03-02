@@ -133,16 +133,16 @@ jobs:
       # ── Regenerate checksums ─────────────────────────────────────────────────
       - name: Regenerate checksums.txt
         run: |
-          > checksums.txt
+          > bin/checksums.txt
           for f in \
             bin/linux-x64/serial_bridge \
             bin/windows-x64/serial_bridge.exe \
             bin/macos-arm64/serial_bridge \
             bin/macos-x64/serial_bridge; do
-            [ -f "$f" ] && sha256sum "$f" >> checksums.txt
+            [ -f "$f" ] && sha256sum "$f" >> bin/checksums.txt
           done
           echo "--- checksums.txt ---"
-          cat checksums.txt
+          cat bin/checksums.txt
 
       # ── Commit & push ────────────────────────────────────────────────────────
       - name: Commit and push
@@ -150,7 +150,7 @@ jobs:
           TAG="${{ steps.ver.outputs.tag }}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add bin/ checksums.txt
+          git add bin/
           if git diff --cached --quiet; then
             echo "Nothing changed — skipping commit."
           else

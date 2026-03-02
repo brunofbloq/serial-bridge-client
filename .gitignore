@@ -5,7 +5,7 @@ Desktop.ini
 .idea/
 .vscode/
 
-# Python / node caches from samples
+# Python / node caches from examples
 __pycache__/
 *.pyc
 node_modules/

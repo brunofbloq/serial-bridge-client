@@ -41,7 +41,7 @@ Repeat for:
 
 ```bash
 cp serial-bridge/release/serial-bridge-${VERSION}-linux-x64.tar.gz   serial-bridge-client/bin/
-cp serial-bridge/release/serial-bridge-${VERSION}-linux-x64.sha256   serial-bridge-client/
+cp serial-bridge/release/serial-bridge-${VERSION}-linux-x64.sha256   serial-bridge-client/bin/
 ```
 
 Repeat for each platform archive and its corresponding `.sha256` file.
@@ -53,15 +53,15 @@ Repeat for each platform archive and its corresponding `.sha256` file.
 Generate a single combined checksum file from the raw binaries:
 
 ```bash
-sha256sum bin/linux-x64/serial_bridge > checksums.txt
+sha256sum bin/linux-x64/serial_bridge > bin/checksums.txt
 ```
 
 Append additional platforms as they are copied in:
 
 ```bash
-sha256sum bin/windows-x64/serial_bridge.exe >> checksums.txt
-sha256sum bin/macos-arm64/serial_bridge     >> checksums.txt
-sha256sum bin/macos-x64/serial_bridge       >> checksums.txt
+sha256sum bin/windows-x64/serial_bridge.exe >> bin/checksums.txt
+sha256sum bin/macos-arm64/serial_bridge     >> bin/checksums.txt
+sha256sum bin/macos-x64/serial_bridge       >> bin/checksums.txt
 ```
 
 ---
@@ -69,7 +69,7 @@ sha256sum bin/macos-x64/serial_bridge       >> checksums.txt
 ## 5) Commit and publish
 
 ```bash
-git add bin/ checksums.txt
+git add bin/
 git commit -m "release: add serial-bridge ${VERSION} binaries and checksums"
 git push
 ```
