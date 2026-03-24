@@ -1,6 +1,22 @@
 # serial-bridge-client
 
 Run `serial_bridge` and expose it as a local virtual serial port (`/tmp/serial_bridge`) backed by the REST API.
+```mermaid
+flowchart LR
+    subgraph Linux_System["Linux System"]
+        direction LR
+        App["App"]
+        style App stroke-dasharray: 5 5
+        VSP["Serial Bridge Client"]
+    end
+    
+    App <--> |/tmp/serial_bridge| VSP
+    VSP <-- REST -->  Cloud["☁️ Web Server"]
+
+    style Linux_System stroke:#000,stroke-width:2px,rx:20,ry:20
+    style App stroke:#000,stroke-width:2px,rx:15,ry:15
+    style VSP stroke:#000,stroke-width:2px,rx:15,ry:15
+```
 
 ## Required to run
 
